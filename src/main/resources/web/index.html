@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>WSSerial</title>
+    <style>
+        * {
+            font-family: monospace;
+            font-size: 12px;
+            margin: 2px;
+        }
+
+        #terminal {
+            background: black;
+            color: lightgreen;
+        }
+
+        #info {
+            background: lightgreen;
+            color: black;
+        }
+
+        #errors {
+            background: lightcoral;
+            color: black;
+        }
+    </style>
+    <script type="text/javascript" src="WSSerial.js"></script>
+</head>
+<body>
+<div>
+    <div>
+        <!--suppress HtmlUnknownTarget -->
+        <a href="wsserial.cer">Certificate</a>
+    </div>
+    <div>
+        <label>port<select id="ports"></select></label>
+        <button type="button" onclick="isOpened();">isOpened</button>
+        <input type="checkbox" id="opened" title="opened" disabled>
+        <button type="button" onclick="openPort();">openPort</button>
+        <button type="button" onclick="closePort();">closePort</button>
+    </div>
+    <div>
+        <label>baud<select id="baud">
+            <option value="110">110</option>
+            <option value="300">300</option>
+            <option value="600">600</option>
+            <option value="1200">1200</option>
+            <option value="4800">4800</option>
+            <option value="9600">9600</option>
+            <option value="14400">14400</option>
+            <option value="19200">19200</option>
+            <option value="38400">38400</option>
+            <option value="57600">57600</option>
+            <option value="115200" selected>115200</option>
+            <option value="128000">128000</option>
+            <option value="256000">125600010</option>
+        </select></label>
+        <label>databits<select id="databits">
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8" selected>8</option>
+        </select></label>
+        <label>stopbits<select id="stopbits">
+            <option value="1" selected>1</option>
+            <option value="3">1.5</option>
+            <option value="2">2</option>
+        </select></label>
+        <label>parity<select id="parity">
+            <option value="0" selected>none</option>
+            <option value="1">odd</option>
+            <option value="2">even</option>
+            <option value="3">mark</option>
+            <option value="4">space</option>
+        </select></label>
+        <label>RTS<input type="checkbox" id="rts" checked/></label>
+        <button type="button" onclick="setRTS();">setRTS</button>
+        <label>DTR<input type="checkbox" id="dtr" checked/></label>
+        <button type="button" onclick="setDTR();">setDTR</button>
+        <button type="button" onclick="setParams();">setParams</button>
+    </div>
+    <div>
+        <button type="button" onclick="getInputBufferBytesCount();">getInputBufferBytesCount</button>
+        <input type="text" title="inputb" id="inputb" readonly>
+        <button type="button" onclick="getOutputBufferBytesCount();">getOutputBufferBytesCount</button>
+        <input type="text" title="outputb" id="outputb" readonly>
+    </div>
+    <div>
+        <label>RXABORT<input type="checkbox" name="purge" value="2"/></label>
+        <label>RXCLEAR<input type="checkbox" name="purge" value="8"/></label>
+        <label>TXABORT<input type="checkbox" name="purge" value="1"/></label>
+        <label>TXCLEAR<input type="checkbox" name="purge" value="4"/></label>
+        <button type="button" onclick="purgePort();">purgePort</button>
+    </div>
+    <div>
+        <button type="button" onclick="getEventsMask();">getEventsMask</button>
+        <label><input type="checkbox" name="event" value="64"/>BREAK</label>
+        <label><input type="checkbox" name="event" value="8"/>CTS</label>
+        <label><input type="checkbox" name="event" value="16"/>DSR</label>
+        <label><input type="checkbox" name="event" value="128"/>ERR</label>
+        <label><input type="checkbox" name="event" value="256"/>RING</label>
+        <label><input type="checkbox" name="event" value="32"/>RLSD</label>
+        <label><input type="checkbox" name="event" value="1" checked/>RXCHAR</label>
+        <label><input type="checkbox" name="event" value="2"/>RXFLAG</label>
+        <label><input type="checkbox" name="event" value="4"/>TXEMPTY</label>
+        <button type="button" onclick="setEventsMask();">setEventsMask</button>
+    </div>
+    <div>
+        <button type="button" onclick="getFlowControlMode();">getFlowControlMode</button>
+        <label><input type="checkbox" name="flow" value="1"/>RTSCTS_IN</label>
+        <label><input type="checkbox" name="flow" value="2"/>RTSCTS_OUT</label>
+        <label><input type="checkbox" name="flow" value="4"/>XONXOFF_IN</label>
+        <label><input type="checkbox" name="flow" value="8"/>XONXOFF_OUT</label>
+        <button type="button" onclick="setFlowControlMode();">setFlowControlMode</button>
+    </div>
+    <div>
+        <label>data<input type="text" id="data"/></label>
+        <label><input type="checkbox" id="newline">\n</label>
+        <button type="button" onclick="writeData();">write</button>
+        <button type="button" onclick="readData();">read</button>
+        <label><input type="checkbox" id="autoread" checked>autoread</label>
+    </div>
+    <div>
+        <label>duration<input type="number" id="break" value="0"/></label>
+        <button type="button" onclick="sendBreak();">sendBreak</button>
+        <button type="button" onclick="getLinesStatus();">getLinesStatus</button>
+        <input type="text" id="lines" title="lines" readonly>
+        <button type="button" onclick="isCTS();">isCTS</button>
+        <input type="checkbox" id="iscts" title="iscts" disabled>
+        <button type="button" onclick="isDSR();">isDSR</button>
+        <input type="checkbox" id="isdsr" title="isdsr" disabled>
+        <button type="button" onclick="isRING();">isRING</button>
+        <input type="checkbox" id="isring" title="isring" disabled>
+        <button type="button" onclick="isRLSD();">isRLSD</button>
+        <input type="checkbox" id="isrlsd" title="isrlsd" disabled>
+    </div>
+    <div>
+        <label><textarea id="terminal" cols="40" rows="40" readonly></textarea></label>
+        <label><textarea id="info" cols="40" rows="40" readonly></textarea></label>
+        <label><textarea id="errors" cols="40" rows="40" readonly></textarea></label>
+    </div>
+</div>
+<script type="text/javascript">
+    function getSelectValue(id) {
+        var select = document.getElementById(id);
+        return select.options[select.selectedIndex].value;
+    }
+    function isChecked(id) {
+        return document.getElementById(id).checked;
+    }
+    function getCheckboxMask(name) {
+        var checkboxes = document.getElementsByName(name),
+                mask = 0;
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].checked) {
+                mask = mask | parseInt(checkboxes[i].value);
+            }
+        }
+        return mask;
+    }
+    function setCheckboxMask(mask, name) {
+        var checkboxes = document.getElementsByName(name);
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = mask & parseInt(checkboxes[i].value);
+        }
+    }
+    function writeToTextarea(data, id) {
+        var textarea = document.getElementById(id);
+        textarea.value += data + (id === "terminal" ? "" : "\n");
+        textarea.scrollTop = textarea.scrollHeight;
+    }
+    WSSerial.errorHandler = function (error) {
+        writeToTextarea(error, "errors");
+    };
+    WSSerial.connect(function () {
+        WSSerial.getPortNames(function (ports) {
+            for (var i = 0; i < ports.length; i++) {
+                var option = document.createElement("option");
+                option.innerHTML = option.value = ports[i];
+                document.getElementById("ports").appendChild(option);
+            }
+        });
+    });
+    function isOpened() {
+        WSSerial.isOpened(getSelectValue("ports"), function (opened) {
+            document.getElementById("opened").checked = opened
+        });
+    }
+    function openPort() {
+        WSSerial.open(getSelectValue("ports"), function (success) {
+            writeToTextarea("open " + (success ? "success" : "fail"), success ? "info" : "errors");
+            isOpened();
+        });
+    }
+    function closePort() {
+        WSSerial.close(getSelectValue("ports"), function (success) {
+            writeToTextarea("close " + (success ? "success" : "fail"), success ? "info" : "errors");
+            isOpened();
+        });
+    }
+    function setParams() {
+        WSSerial.setParamsRtsDtr(getSelectValue("ports"),
+                getSelectValue("baud"), getSelectValue("databits"), getSelectValue("stopbits"),
+                getSelectValue("parity"), isChecked("rts"), isChecked("dtr"),
+                function (success) {
+                    writeToTextarea("setParamsRtsDtr " + (success ? "success" : "fail"), success ? "info" : "errors");
+                    WSSerial.onBREAK = function (port) {
+                        writeToTextarea(port + " BREAK", "info");
+                    };
+                    WSSerial.onCTS = function (port, state) {
+                        document.getElementById("iscts").checked = state;
+                        writeToTextarea(port + " CTS " + state, "info");
+                    };
+                    WSSerial.onDSR = function (port, state) {
+                        document.getElementById("isdsr").checked = state;
+                        writeToTextarea(port + " DSR " + state, "info");
+                    };
+                    WSSerial.onERR = function (port, mask) {
+                        if (mask & WSSerial.ERROR_FRAME) {
+                            writeToTextarea(port + " ERROR_FRAME", "errors");
+                        } else if (mask & WSSerial.ERROR_OVERRUN) {
+                            writeToTextarea(port + " ERROR_OVERRUN", "errors");
+                        } else if (mask & WSSerial.ERROR_PARITY) {
+                            writeToTextarea(port + " ERROR_PARITY", "errors");
+                        }
+                    };
+                    WSSerial.onRING = function (port, state) {
+                        document.getElementById("isring").checked = state;
+                        writeToTextarea(port + " RING " + state, "info");
+                    };
+                    WSSerial.onRLSD = function (port, state) {
+                        document.getElementById("isrlsd").checked = state;
+                        writeToTextarea(port + " RLSD " + state, "info");
+                    };
+                    WSSerial.onRXCHAR = function (port, value) {
+                        writeToTextarea(port + " RXCHAR " + value, "info");
+                        if (document.getElementById("autoread").checked) {
+                            WSSerial.read(port, function (data) {
+                                if (data !== null) {
+                                    writeToTextarea(data, "terminal")
+                                }
+                            });
+                        }
+                    };
+                    WSSerial.onRXFLAG = function (port, value) {
+                        writeToTextarea(port + " RXFLAG " + value, "info");
+                    };
+                    WSSerial.onTXEMPTY = function (port) {
+                        writeToTextarea(port + " TXEMPTY", "info");
+                    }
+                });
+    }
+    function setRTS() {
+        WSSerial.setRTS(getSelectValue("ports"), isChecked("rts"), function (success) {
+            writeToTextarea("setRTS " + (success ? "success" : "fail"), success ? "info" : "errors");
+        });
+    }
+    function setDTR() {
+        WSSerial.setDTR(getSelectValue("ports"), isChecked("rts"), function (success) {
+            writeToTextarea("setDTR " + (success ? "success" : "fail"), success ? "info" : "errors");
+        });
+    }
+    function getInputBufferBytesCount() {
+        WSSerial.getInputBufferBytesCount(getSelectValue("ports"), function (count) {
+            document.getElementById("inputb").value = count.toString();
+        });
+    }
+    function getOutputBufferBytesCount() {
+        WSSerial.getOutputBufferBytesCount(getSelectValue("ports"), function (count) {
+            document.getElementById("outputb").value = count.toString();
+        });
+    }
+    function purgePort() {
+        WSSerial.purgePort(getSelectValue("ports"), getCheckboxMask("purge"), function (success) {
+            writeToTextarea("purgePort " + (success ? "success" : "fail"), success ? "info" : "errors");
+        });
+    }
+    function getEventsMask() {
+        WSSerial.getEventsMask(getSelectValue("ports"), function (mask) {
+            setCheckboxMask(mask, "event")
+        });
+    }
+    function setEventsMask() {
+        WSSerial.setEventsMask(getSelectValue("ports"), getCheckboxMask("event"), function (success) {
+            writeToTextarea("setEventsMask " + (success ? "success" : "fail"), success ? "info" : "errors");
+        });
+    }
+    function getFlowControlMode() {
+        WSSerial.getFlowControlMode(getSelectValue("ports"), function (mask) {
+            setCheckboxMask(mask, "flow")
+        });
+    }
+    function setFlowControlMode() {
+        WSSerial.setFlowControlMode(getSelectValue("ports"), getCheckboxMask("flow"), function (success) {
+            writeToTextarea("setFlowControlMode " + (success ? "success" : "fail"), success ? "info" : "errors");
+        });
+    }
+    function writeData() {
+        var data = document.getElementById("data").value;
+        if (document.getElementById("newline").checked)
+            data += "\n";
+        WSSerial.write(getSelectValue("ports"), data, function (success) {
+            writeToTextarea("write " + (success ? "success" : "fail"), success ? "info" : "errors");
+        });
+    }
+    function readData() {
+        WSSerial.read(getSelectValue("ports"), function (data) {
+            if (data != null)
+                writeToTextarea(data, "terminal")
+        });
+    }
+    function sendBreak() {
+        WSSerial.sendBreak(getSelectValue("ports"), document.getElementById("break").value, function (success) {
+            writeToTextarea("sendBreak " + (success ? "success" : "fail"), success ? "info" : "errors");
+        });
+    }
+    function getLinesStatus() {
+        WSSerial.getLinesStatus(getSelectValue("ports"), function (status) {
+            var output = document.getElementById("lines");
+            output.value = "";
+            for (var i = 0; i < status.length; i++) {
+                output.value += status[i].toString();
+                if (i < status.length - 1)
+                    output.value += " "
+            }
+        });
+    }
+    function isCTS() {
+        WSSerial.isCTS(getSelectValue("ports"), function (cts) {
+            document.getElementById("iscts").checked = cts;
+        });
+    }
+    function isDSR() {
+        WSSerial.isDSR(getSelectValue("ports"), function (cts) {
+            document.getElementById("isdsr").checked = cts;
+        });
+    }
+    function isRING() {
+        WSSerial.isRING(getSelectValue("ports"), function (cts) {
+            document.getElementById("isring").checked = cts;
+        });
+    }
+    function isRLSD() {
+        WSSerial.isRLSD(getSelectValue("ports"), function (cts) {
+            document.getElementById("isrlsd").checked = cts;
+        });
+    }
+</script>
+</body>
+</html>
