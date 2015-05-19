@@ -21,23 +21,31 @@ public class WSSerial extends WebSocketAdapter {
         this.serialPortTable = new ConcurrentHashMap<>();
     }
 
-    private void sendReply(Object result, String error, Long id) throws IOException {
+    private void sendReply(Object result, String error, Long id) {
         JSONObject json = new JSONObject();
         json.put("result", result == null ? JSONObject.NULL : result);
         json.put("error", error == null ? JSONObject.NULL : error);
         json.put("id", id == null ? JSONObject.NULL : id);
-        super.getRemote().sendString(json.toString());
+        try {
+            super.getRemote().sendString(json.toString());
+        } catch (IOException e) {
+            super.getRemote().sendStringByFuture(json.toString());
+        }
     }
 
-    private void sendRequest(String method, JSONArray params, Long id) throws IOException {
+    private void sendRequest(String method, JSONArray params, Long id) {
         JSONObject json = new JSONObject();
         json.put("method", method == null ? JSONObject.NULL : method);
         json.put("params", params == null ? JSONObject.NULL : params);
         json.put("id", id == null ? JSONObject.NULL : id);
-        super.getRemote().sendStringByFuture(json.toString());
+        try {
+            super.getRemote().sendString(json.toString());
+        } catch (IOException e) {
+            super.getRemote().sendStringByFuture(json.toString());
+        }
     }
 
-    private void handleRequest(String method, JSONArray params, Long id) {
+    private void handleRequest(String method, JSONArray params, Long id) throws InvalidRequestException {
         String error;
         try {
             Object result;
@@ -62,7 +70,7 @@ public class WSSerial extends WebSocketAdapter {
                                 params.getInt(2),
                                 params.getInt(3),
                                 params.getInt(4)
-                        );
+                                          );
                     } else {
                         result = setParams(
                                 params.getString(0),
@@ -72,7 +80,7 @@ public class WSSerial extends WebSocketAdapter {
                                 params.getInt(4),
                                 params.getBoolean(5),
                                 params.getBoolean(6)
-                        );
+                                          );
                     }
                     break;
                 case "setRTS":
@@ -135,23 +143,16 @@ public class WSSerial extends WebSocketAdapter {
                     result = isRLSD(params.getString(0));
                     break;
                 default:
-                    sendReply(null, "No such function", id);
-                    return;
+                    throw new InvalidRequestException();
             }
             sendReply(result, null, id);
             return;
         } catch (SerialPortException serialEx) {
             error = serialEx.getExceptionType();
         } catch (SerialPortTimeoutException serialTimeoutEx) {
-            error = "Timeout";
-        } catch (Exception ex) {
-            error = ex.getMessage();
-            ex.printStackTrace();
+            error = "Serial port timeout";
         }
-        try {
-            sendReply(null, error, id);
-        } catch (IOException ignored) {
-        }
+        sendReply(null, error, id);
     }
 
     private SerialPort getSerialPort(String portName) throws SerialPortException {
@@ -191,11 +192,13 @@ public class WSSerial extends WebSocketAdapter {
         return getSerialPort(portName).closePort();
     }
 
-    private boolean setParams(String portName, int baudRate, int dataBits, int stopBits, int parity, boolean setRTS, boolean setDTR) throws SerialPortException {
+    private boolean setParams(String portName, int baudRate, int dataBits, int stopBits, int parity, boolean setRTS,
+                              boolean setDTR) throws SerialPortException {
         return getSerialPort(portName).setParams(baudRate, dataBits, stopBits, parity, setRTS, setDTR);
     }
 
-    private boolean setParams(String portName, int baudRate, int dataBits, int stopBits, int parity) throws SerialPortException {
+    private boolean setParams(String portName, int baudRate, int dataBits, int stopBits, int parity) throws
+    SerialPortException {
         return setParams(portName, baudRate, dataBits, stopBits, parity, true, true);
     }
 
@@ -239,7 +242,8 @@ public class WSSerial extends WebSocketAdapter {
         return getSerialPort(portName).writeBytes(buffer);
     }
 
-    private byte[] read(String portName, int count, int timeout) throws SerialPortException, SerialPortTimeoutException {
+    private byte[] read(String portName, int count, int timeout) throws SerialPortException,
+    SerialPortTimeoutException {
         return getSerialPort(portName).readBytes(count, timeout);
     }
 
@@ -294,18 +298,15 @@ public class WSSerial extends WebSocketAdapter {
     @Override
     public void onWebSocketText(String message) {
         super.onWebSocketText(message);
+        Long id = null;
         try {
             JSONObject json = new JSONObject(message);
             String method = json.getString("method");
             JSONArray params = json.getJSONArray("params");
-            Long id = json.getLong("id");
+            id = json.getLong("id");
             handleRequest(method, params, id);
-        } catch (JSONException e) {
-            try {
-                sendReply(null, "Request error", null);
-            } catch (IOException ignored) {
-                e.printStackTrace();
-            }
+        } catch (JSONException | InvalidRequestException e) {
+            sendReply(null, "Invalid request", id);
         }
     }
 
@@ -321,12 +322,6 @@ public class WSSerial extends WebSocketAdapter {
         System.exit(0);
     }
 
-    @Override
-    public void onWebSocketError(Throwable cause) {
-        super.onWebSocketError(cause);
-        cause.printStackTrace(System.err);
-    }
-
     private class Reader implements SerialPortEventListener {
         @Override
         public void serialEvent(SerialPortEvent event) {
@@ -337,10 +332,11 @@ public class WSSerial extends WebSocketAdapter {
             params.put(event.getPortName());
             params.put(event.getEventType());
             params.put(event.getEventValue());
-            try {
-                WSSerial.this.sendRequest("serialEvent", params, null);
-            } catch (IOException ignored) {
-            }
+            WSSerial.this.sendRequest("serialEvent", params, null);
         }
+    }
+
+    private class InvalidRequestException extends Exception {
+        public InvalidRequestException() { }
     }
 }

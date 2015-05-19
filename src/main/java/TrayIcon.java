@@ -13,7 +13,8 @@ class TrayIcon implements ActionListener {
             final PopupMenu popup = new PopupMenu();
             trayIconImage = ImageIO.read(Main.class.getResource("/icon.png"));
             int trayIconWidth = new java.awt.TrayIcon(trayIconImage).getSize().width;
-            java.awt.TrayIcon trayIcon = new java.awt.TrayIcon(trayIconImage.getScaledInstance(trayIconWidth, -1, Image.SCALE_SMOOTH));
+            java.awt.TrayIcon trayIcon = new java.awt.TrayIcon(
+                    trayIconImage.getScaledInstance(trayIconWidth, -1, Image.SCALE_SMOOTH));
             final SystemTray tray = SystemTray.getSystemTray();
             MenuItem exitItem = new MenuItem("Exit");
             exitItem.addActionListener(this);

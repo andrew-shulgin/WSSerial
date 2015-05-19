@@ -40,7 +40,8 @@ class Server {
         ContextHandler certHandler = new ContextHandler();
         class CertificateContextHandler extends AbstractHandler {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse
+                    response) throws IOException, ServletException {
                 if (target.toLowerCase().endsWith(".cer")) {
                     try {
                         KeyStore httpKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -74,7 +75,8 @@ class Server {
             keyStore.load(getClass().getResourceAsStream("/keystore.jks"), "password".toCharArray());
             sslContextFactory.setKeyStore(keyStore);
             sslContextFactory.setKeyManagerPassword("password");
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory,
+                                                                                 HttpVersion.HTTP_1_1.asString());
             httpConnectionFactory = new HttpConnectionFactory(new HttpConfiguration());
             connector = new ServerConnector(server, sslConnectionFactory, httpConnectionFactory);
         } else {

@@ -1,61 +1,76 @@
 var WSSerial = {
     webSocket: null,
     pendingRequests: [],
+
     BAUDRATE_110: 110,
-    BAUDRATE_115200: 115200,
+    BAUDRATE_300: 300,
+    BAUDRATE_600: 600,
     BAUDRATE_1200: 1200,
-    BAUDRATE_128000: 128000,
+    BAUDRATE_4800: 4800,
+    BAUDRATE_9600: 9600,
     BAUDRATE_14400: 14400,
     BAUDRATE_19200: 19200,
-    BAUDRATE_256000: 256000,
-    BAUDRATE_300: 300,
     BAUDRATE_38400: 38400,
-    BAUDRATE_4800: 4800,
     BAUDRATE_57600: 57600,
-    BAUDRATE_600: 600,
-    BAUDRATE_9600: 9600,
+    BAUDRATE_115200: 115200,
+    BAUDRATE_128000: 128000,
+    BAUDRATE_256000: 256000,
+
     DATABITS_5: 5,
     DATABITS_6: 6,
     DATABITS_7: 7,
     DATABITS_8: 8,
-    ERROR_FRAME: 8,
-    ERROR_OVERRUN: 2,
-    ERROR_PARITY: 4,
+
+    STOPBITS_1: 1,
+    STOPBITS_2: 2,
+    STOPBITS_1_5: 3,
+
+    PARITY_NONE: 0,
+    PARITY_ODD: 1,
+    PARITY_EVEN: 2,
+    PARITY_MARK: 3,
+    PARITY_SPACE: 4,
+
+    PURGE_RXABORT: 2,
+    PURGE_RXCLEAR: 8,
+    PURGE_TXABORT: 1,
+    PURGE_TXCLEAR: 4,
+
+    MASK_RXCHAR: 1,//bytes count in input buffer
+    MASK_RXFLAG: 2,//bytes count in input buffer (Not supported in Linux)
+    MASK_TXEMPTY: 4,//bytes count in output buffer
+    MASK_CTS: 8,//state of CTS line (0 - OFF, 1 - ON)
+    MASK_DSR: 16,//state of DSR line (0 - OFF, 1 - ON)
+    MASK_RLSD: 32,//state of RLSD line (0 - OFF, 1 - ON)
+    MASK_BREAK: 64,//0
+    MASK_ERR: 128,//mask of errors
+    MASK_RING: 256,//state of RING line (0 - OFF, 1 - ON)
+
     FLOWCONTROL_NONE: 0,
     FLOWCONTROL_RTSCTS_IN: 1,
     FLOWCONTROL_RTSCTS_OUT: 2,
     FLOWCONTROL_XONXOFF_IN: 4,
     FLOWCONTROL_XONXOFF_OUT: 8,
-    MASK_BREAK: 64,
-    MASK_CTS: 8,
-    MASK_DSR: 16,
-    MASK_ERR: 128,
-    MASK_RING: 256,
-    MASK_RLSD: 32,
-    MASK_RXCHAR: 1,
-    MASK_RXFLAG: 2,
-    MASK_TXEMPTY: 4,
-    PARITY_EVEN: 2,
-    PARITY_MARK: 3,
-    PARITY_NONE: 0,
-    PARITY_ODD: 1,
-    PARITY_SPACE: 4,
-    PURGE_RXABORT: 2,
-    PURGE_RXCLEAR: 8,
-    PURGE_TXABORT: 1,
-    PURGE_TXCLEAR: 4,
-    STOPBITS_1: 1,
-    STOPBITS_1_5: 3,
-    STOPBITS_2: 2,
-    BREAK: 64,//0
-    CTS: 8,//state of CTS line (0 - OFF, 1 - ON)
-    DSR: 16,//state of DSR line (0 - OFF, 1 - ON)
-    ERR: 128,//mask of errors
-    RING: 256,//state of RING line (0 - OFF, 1 - ON)
-    RLSD: 32,//state of RLSD line (0 - OFF, 1 - ON)
-    RXCHAR: 1,//bytes count in input buffer
-    RXFLAG: 2,//bytes count in input buffer (Not supported in Linux)
-    TXEMPTY: 4,//bytes count in output buffer
+
+    ERROR_FRAME: 8,
+    ERROR_OVERRUN: 2,
+    ERROR_PARITY: 4,
+
+    ERROR_STRING_PORT_ALREADY_OPENED: "Port already opened",
+    ERROR_STRING_PORT_NOT_OPENED: "Port not opened",
+    ERROR_STRING_CANT_SET_MASK: "Can\'t set mask",
+    ERROR_STRING_LISTENER_ALREADY_ADDED: "Event listener already added",
+    ERROR_STRING_LISTENER_THREAD_INTERRUPTED: "Event listener thread interrupted",
+    ERROR_STRING_CANT_REMOVE_LISTENER: "Can\'t remove event listener, because listener not added",
+    ERROR_STRING_PARAMETER_IS_NOT_CORRECT: "Parameter is not correct",
+    ERROR_STRING_NULL_NOT_PERMITTED: "Null not permitted",
+    ERROR_STRING_PORT_BUSY: "Port busy",
+    ERROR_STRING_PORT_NOT_FOUND: "Port not found",
+    ERROR_STRING_PERMISSION_DENIED: "Permission denied",
+    ERROR_STRING_INCORRECT_SERIAL_PORT: "Incorrect serial port",
+    ERROR_STRING_TIMEOUT: "Serial port timeout",
+    ERROR_STRING_INVALID_REQUEST: "Invalid request",
+
     errorHandler: function (error) {
         console.error(error)
     },
@@ -96,31 +111,31 @@ WSSerial.process = function (message) {
                 event = data.params[1],
                 value = data.params[2];
             switch (event) {
-                case WSSerial.BREAK:
+                case WSSerial.MASK_BREAK:
                     WSSerial.onBREAK(port);
                     break;
-                case WSSerial.CTS:
+                case WSSerial.MASK_CTS:
                     WSSerial.onCTS(port);
                     break;
-                case WSSerial.DSR:
+                case WSSerial.MASK_DSR:
                     WSSerial.onDSR(port);
                     break;
-                case WSSerial.ERR:
+                case WSSerial.MASK_ERR:
                     WSSerial.onERR(port);
                     break;
-                case WSSerial.RING:
+                case WSSerial.MASK_RING:
                     WSSerial.onRING(port);
                     break;
-                case WSSerial.RLSD:
+                case WSSerial.MASK_RLSD:
                     WSSerial.onRLSD(port);
                     break;
-                case WSSerial.RXCHAR:
+                case WSSerial.MASK_RXCHAR:
                     WSSerial.onRXCHAR(port, value);
                     break;
-                case WSSerial.RXFLAG:
+                case WSSerial.MASK_RXFLAG:
                     WSSerial.onRXFLAG(port);
                     break;
-                case WSSerial.TXEMPTY:
+                case WSSerial.MASK_TXEMPTY:
                     WSSerial.onTXEMPTY(port);
                     break;
             }
